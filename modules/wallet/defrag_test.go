@@ -232,7 +232,7 @@ func TestDefragFeeEstimation(t *testing.T) {
 	defer wt.closeWt()
 	minFee := types.SiacoinPrecision.Mul64(100)
 	maxFee := types.SiacoinPrecision.Mul64(10000)
-	txnSize := uint64(10000)
+	txnSize := uint64(250) * defragBatchSize
 	expectedFees := minFee.Mul64(txnSize)
 	wt.wallet.mu.Lock()
 	wt.wallet.tpool = &mockTpool{minFee, maxFee}

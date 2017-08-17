@@ -131,10 +131,11 @@ func (w *Wallet) threadedDefragWallet() {
 	}
 	w.mu.Unlock()
 
-	// get the required fee for the defrag transaction
-	// 35 outputs at an estimated 250 bytes needed per output means about a 10kb
-	// total transaction.
-	fee := w.defragFee(10000)
+	// get the required fee for the defrag transaction.  35 outputs at an
+	// estimated 250 bytes needed per output means about a 10kb total
+	// transaction.
+	sizeAvgOutput := uint64(250) // bytes
+	fee := w.defragFee(sizeAvgOutput * defragBatchSize)
 
 	// Create the defrag transaction.
 	w.mu.Lock()
