@@ -226,3 +226,77 @@ func (so sortedOutputs) Swap(i, j int) {
 	so.ids[i], so.ids[j] = so.ids[j], so.ids[i]
 	so.outputs[i], so.outputs[j] = so.outputs[j], so.outputs[i]
 }
+
+// SetupTradeOffer creates an offer to buy/sell Siafund(s) for Siacoins
+func (w *Wallet) SetupTradeOffer(iBuySiafund bool, amountSiacoin types.Currency, amountSiafund types.Currency) ([]types.Transaction, error) {
+	if err := w.tg.Add(); err != nil {
+		return nil, err
+	}
+	defer w.tg.Done()
+	if !w.unlocked {
+		w.log.Println("Setup trade offer has failed - wallet is locked")
+		return nil, modules.ErrLockedWallet
+	}
+	uc, err := w.NextAddress()
+	if err != nil {
+		return nil, err
+	}
+	destSiacoin := uc.UnlockHash()
+	destSiafund := uc.UnlockHash()
+
+	outputSiafund := types.SiafundOutput{
+		Value:      amountSiafund,
+		UnlockHash: destSiafund,
+	}
+
+	txnBuilder := w.StartTransaction()
+
+	// Add estimated transaction fee.
+	_, tpoolFee := w.tpool.FeeEstimation()
+	tpoolFee = tpoolFee.Mul64(3)                   // High value
+	tpoolFee = tpoolFee.Mul64(1000 + 60*uint64(2)) // Estimated transaction size in bytes
+	txnBuilder.AddMinerFee(tpoolFee)
+
+	// Calculate total cost to wallet.
+	// NOTE: we only want to call FundSiacoins once; that way, it will
+	// (ideally) fund the entire transaction with a single input, instead of
+	// many smaller ones.
+	totalCostSiacoin := tpoolFee
+	totalCostSiacoin.Add(amountSiacoin)
+	outputSiacoin := types.SiacoinOutput{
+		Value:      amountSiacoin,
+		UnlockHash: destSiacoin,
+	}
+	txnBuilder.AddSiacoinOutput(outputSiacoin)
+	txnBuilder.AddSiafundOutput(outputSiafund)
+	if err != nil {
+		return nil, build.ExtendErr("unable to fund transaction", err)
+	}
+	if iBuySiafund {
+		err := txnBuilder.FundSiacoins(totalCostSiacoin)
+		if err != nil {
+			return nil, build.ExtendErr("unable to fund transaction", err)
+		}
+	} else {
+		err := txnBuilder.FundSiafunds(amountSiafund)
+		if err != nil {
+			return nil, build.ExtendErr("unable to fund transaction", err)
+		}
+	}
+
+	txnBuilder.AddSiacoinOutput(outputSiacoin)
+	txnBuilder.AddSiafundOutput(outputSiafund)
+
+	txnSet, err := txnBuilder.Sign(true)
+	if err != nil {
+		w.log.Println("Attempt to send coins has failed - failed to sign transaction:", err)
+		return nil, build.ExtendErr("unable to sign transaction", err)
+	}
+	//  TODO
+	//	err = w.tpool.AcceptTransactionSet(txnSet)
+	//	if err != nil {
+	//		w.log.Println("Attempt to send coins has failed - transaction pool rejected transaction:", err)
+	//		return nil, build.ExtendErr("unable to get transaction accepted", err)
+	//	}
+	return txnSet, nil
+}

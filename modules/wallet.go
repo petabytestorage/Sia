@@ -391,6 +391,9 @@ type (
 		// transactions are automatically given to the transaction pool, and
 		// are also returned to the caller.
 		SendSiafunds(amount types.Currency, dest types.UnlockHash) ([]types.Transaction, error)
+
+		// SetupTradeOffer sets up an offer to buy/sell siafund(s) for siacoins
+		SetupTradeOffer(iBuySiafund bool, amountIoffer types.Currency, amountIget types.Currency) ([]types.Transaction, error)
 	}
 )
 
