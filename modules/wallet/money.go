@@ -300,3 +300,17 @@ func (w *Wallet) SetupTradeOffer(iBuySiafund bool, amountSiacoin types.Currency,
 	//	}
 	return txnSet, nil
 }
+
+// First Alice sets up an offer using SetupTradeOffer and gets a hex string
+// to give to Bob.  Bob decodes the hex string to get the types.Transaction
+// array and then calls AcceptTradeOffer with the same amountSiacoin and
+// amountSiafund parameters as Alice did to initiate the offer. The bool should
+// be inverted for Bob compared to Alice and the hex string she gave him is
+// used to provide the "offer" parameter. If the amountSiacoin and
+// amountSiafund match exactly and the bool is correct and the offer is
+// already half-signed then this function will return a transaction that is
+// ready to be broadcast to complete the trade on the blockchain.
+func (w *Wallet) AcceptTradeOffer(iBuySiafund bool, amountSiacoin types.Currency, amountSiafund types.Currency, offerToAccept []types.Transaction) ([]types.Transaction, error) {
+    // TODO
+    return nil, nil
+}
